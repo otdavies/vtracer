@@ -13,7 +13,7 @@ keywords = ["svg", "computer-graphics"]
 [dependencies]
 image = "0.23.10"
 visioncortex = { version = "0.8.8" }
-fastrand = "1.8"
+fastrand = { version = "2.3", features = ["js"] }
 
 [lib]
 name = "vtracer"
