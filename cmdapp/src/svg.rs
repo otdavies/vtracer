@@ -35,8 +35,7 @@ impl fmt::Display for SvgFile {
         writeln!(f, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
         writeln!(
             f,
-            r#"<!-- Generator: visioncortex VTracer {} -->"#,
-            env!("CARGO_PKG_VERSION")
+            r#"<!-- Generator: visioncortex VTracer -->"#
         )?;
         writeln!(
             f,

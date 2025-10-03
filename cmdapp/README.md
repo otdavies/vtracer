@@ -1,96 +1,75 @@
-<div align="center">
+# VTracer - Rust Library
 
-  <img src="https://raw.githubusercontent.com/visioncortex/vtracer/master/docs/images/visioncortex-banner.png">
-  <h1>VTracer</h1>
+A pure Rust library for converting raster images into vector graphics (SVG).
 
-  <p>
-    <strong>Raster to Vector Graphics Converter built on top of visioncortex</strong>
-  </p>
+## Features
 
-  <h3>
-    <a href="https://www.visioncortex.org/vtracer-docs">Article</a>
-    <span> | </span>
-    <a href="https://www.visioncortex.org/vtracer/">Demo</a>
-    <span> | </span>
-    <a href="https://github.com/visioncortex/vtracer/releases/latest">Download</a>
-  </h3>
+- Convert raster images (ColorImage) to SVG format
+- Support for both color and binary images
+- Configurable tracing parameters
+- No environment variable dependencies
+- WASM-compatible (no std::env usage)
 
-  <sub>Built with 🦀 by <a href="https://www.visioncortex.org/">The Vision Cortex Research Group</a></sub>
-</div>
+## Core API
 
-## Introduction
+### Main Function
 
-visioncortex VTracer is an open source software to convert raster images (like jpg & png) into vector graphics (svg). It can vectorize graphics and photographs and trace the curves to output compact vector files.
-
-Comparing to [Potrace](http://potrace.sourceforge.net/) which only accept binarized inputs (Black & White pixmap), VTracer has an image processing pipeline which can handle colored high resolution scans.
-
-Comparing to Adobe Illustrator's [Image Trace](https://helpx.adobe.com/illustrator/using/image-trace.html), VTracer's output is much more compact (less shapes) as we adopt a stacking strategy and avoid producing shapes with holes.
-
-VTracer is originally designed for processing high resolution scans of historic blueprints up to gigapixels. At the same time, VTracer can also handle low resolution pixel art, simulating `image-rendering: pixelated` for retro game artworks.
-
-A technical description of the algorithm is on [visioncortex.org/vtracer-docs](https://www.visioncortex.org/vtracer-docs).
-
-## Cmd App
-
-```sh
-visioncortex VTracer 0.6.0
-A cmd app to convert images into vector graphics.
-
-USAGE:
-    vtracer [OPTIONS] --input <input> --output <output>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-        --colormode <color_mode>                 True color image `color` (default) or Binary image `bw`
-    -p, --color_precision <color_precision>      Number of significant bits to use in an RGB channel
-    -c, --corner_threshold <corner_threshold>    Minimum momentary angle (degree) to be considered a corner
-    -f, --filter_speckle <filter_speckle>        Discard patches smaller than X px in size
-    -g, --gradient_step <gradient_step>          Color difference between gradient layers
-        --hierarchical <hierarchical>
-            Hierarchical clustering `stacked` (default) or non-stacked `cutout`. Only applies to color mode.
-
-    -i, --input <input>                          Path to input raster image
-    -m, --mode <mode>                            Curver fitting mode `pixel`, `polygon`, `spline`
-    -o, --output <output>                        Path to output vector graphics
-        --path_precision <path_precision>        Number of decimal places to use in path string
-        --preset <preset>                        Use one of the preset configs `bw`, `poster`, `photo`
-    -l, --segment_length <segment_length>
-            Perform iterative subdivide smooth until all segments are shorter than this length
-
-    -s, --splice_threshold <splice_threshold>    Minimum angle displacement (degree) to splice a spline
+```rust
+pub fn convert(img: ColorImage, config: Config) -> Result<SvgFile, String>
 ```
 
-### Install
+Converts an in-memory `ColorImage` into an in-memory `SvgFile`.
 
-You can download pre-built binaries from [Releases](https://github.com/visioncortex/vtracer/releases).
+### Configuration
 
-You can also install the program from source from [crates.io/vtracer](https://crates.io/crates/vtracer):
+Use `Config` struct to control the conversion behavior:
 
-```sh
-cargo install vtracer
+- `color_mode`: Choose between `ColorMode::Color` or `ColorMode::Binary`
+- `hierarchical`: Choose between `Hierarchical::Stacked` or `Hierarchical::Cutout`
+- `filter_speckle`: Discard patches smaller than X×X pixels
+- `color_precision`: Number of significant bits in RGB channels (1-8)
+- `layer_difference`: Color difference between gradient layers (0-255)
+- `mode`: Path simplification mode (Spline, Polygon, or None)
+- `corner_threshold`: Minimum angle in degrees to be considered a corner (0-180)
+- `length_threshold`: Maximum segment length (3.5-10.0)
+- `max_iterations`: Maximum iterations for curve fitting
+- `splice_threshold`: Minimum angle in degrees to splice a spline (0-180)
+- `path_precision`: Number of decimal places in SVG path strings
+
+### Presets
+
+Three convenient presets are available:
+
+- `Config::from_preset(Preset::Bw)` - For binary images
+- `Config::from_preset(Preset::Poster)` - For color posters
+- `Config::from_preset(Preset::Photo)` - For photographs
+
+## Example
+
+See `examples/basic_usage.rs` for a complete example.
+
+```rust
+use vtracer::{convert, ColorImage, Config, Preset};
+
+let img = ColorImage {
+    pixels: vec![255, 0, 0, 255],  // RGBA pixels
+    width: 1,
+    height: 1,
+};
+
+let config = Config::from_preset(Preset::Poster);
+let svg = convert(img, config)?;
+println!("{}", svg);
 ```
 
-### Usage
+## Building
 
 ```sh
-./vtracer --input input.jpg --output output.svg
+cargo build --lib
 ```
 
-## Rust Library
-
-You can install [`vtracer`](https://crates.io/crates/vtracer) as a Rust library.
+## Running Examples
 
 ```sh
-cargo add vtracer
-```
-
-## Python Library
-
-Since `0.6`, [`vtracer`](https://pypi.org/project/vtracer/) is also packaged as Python native extensions, thanks to the awesome [pyo3](https://github.com/PyO3/pyo3) project.
-
-```sh
-pip install vtracer
+cargo run --example basic_usage
 ```

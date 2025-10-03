@@ -4,15 +4,11 @@
   <h1>VTracer</h1>
 
   <p>
-    <strong>Raster to Vector Graphics Converter built on top of visioncortex</strong>
+    <strong>Rust Library for Raster to Vector Graphics Conversion</strong>
   </p>
 
   <h3>
     <a href="https://www.visioncortex.org/vtracer-docs">Article</a>
-    <span> | </span>
-    <a href="https://www.visioncortex.org/vtracer/">Web App</a>
-    <span> | </span>
-    <a href="https://github.com/visioncortex/vtracer/releases">Download</a>
   </h3>
 
   <sub>Built with 🦀 by <a href="https://www.visioncortex.org/">The Vision Cortex Research Group</a></sub>
@@ -30,79 +26,95 @@ VTracer is originally designed for processing high resolution scans of historic 
 
 Technical descriptions of the [tracing algorithm](https://www.visioncortex.org/vtracer-docs) and [clustering algorithm](https://www.visioncortex.org/impression-docs).
 
-## Web App
+## Library Usage
 
-VTracer and its [core library](//github.com/visioncortex/visioncortex) is implemented in [Rust](//www.rust-lang.org/). It provides us a solid foundation to develop robust and efficient algorithms and easily bring it to interactive applications. The webapp is a perfect showcase of the capability of the Rust + wasm platform.
+This is a pure Rust library for converting raster images into vector graphics. It can be used in Rust applications and compiles to WASM without any environment variable dependencies.
 
-![screenshot](docs/images/screenshot-01.png)
+### Installation
 
-![screenshot](docs/images/screenshot-02.png)
+Add `vtracer` to your `Cargo.toml`:
 
-## Cmd App
-
-```sh
-visioncortex VTracer 0.6.0
-A cmd app to convert images into vector graphics.
-
-USAGE:
-    vtracer [OPTIONS] --input <input> --output <output>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-        --colormode <color_mode>                 True color image `color` (default) or Binary image `bw`
-    -p, --color_precision <color_precision>      Number of significant bits to use in an RGB channel
-    -c, --corner_threshold <corner_threshold>    Minimum momentary angle (degree) to be considered a corner
-    -f, --filter_speckle <filter_speckle>        Discard patches smaller than X px in size
-    -g, --gradient_step <gradient_step>          Color difference between gradient layers
-        --hierarchical <hierarchical>
-            Hierarchical clustering `stacked` (default) or non-stacked `cutout`. Only applies to color mode.
-
-    -i, --input <input>                          Path to input raster image
-    -m, --mode <mode>                            Curver fitting mode `pixel`, `polygon`, `spline`
-    -o, --output <output>                        Path to output vector graphics
-        --path_precision <path_precision>        Number of decimal places to use in path string
-        --preset <preset>                        Use one of the preset configs `bw`, `poster`, `photo`
-    -l, --segment_length <segment_length>
-            Perform iterative subdivide smooth until all segments are shorter than this length
-
-    -s, --splice_threshold <splice_threshold>    Minimum angle displacement (degree) to splice a spline
+```toml
+[dependencies]
+vtracer = { path = "cmdapp" }
 ```
 
-## Downloads
+### Basic Example
 
-You can download pre-built binaries from [Releases](https://github.com/visioncortex/vtracer/releases).
+```rust
+use vtracer::{convert, ColorImage, Config, Preset};
 
-You can also install the program from source from [crates.io/vtracer](https://crates.io/crates/vtracer):
-
-```sh
-cargo install vtracer
+fn main() {
+    // Create an image
+    let width = 10;
+    let height = 10;
+    let mut pixels = Vec::new();
+    
+    for _y in 0..height {
+        for _x in 0..width {
+            pixels.push(255); // R
+            pixels.push(0);   // G
+            pixels.push(0);   // B
+            pixels.push(255); // A
+        }
+    }
+    
+    let img = ColorImage {
+        pixels,
+        width,
+        height,
+    };
+    
+    // Use a preset configuration
+    let config = Config::from_preset(Preset::Poster);
+    
+    // Convert the image to SVG
+    match convert(img, config) {
+        Ok(svg) => {
+            println!("SVG output:\n{}", svg);
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+        }
+    }
+}
 ```
 
-> You are strongly advised to not download from any other third-party sources 
+### Configuration Options
 
-### Usage
+The library provides three preset configurations:
 
-```sh
-./vtracer --input input.jpg --output output.svg
+- `Preset::Bw` - For binary (black and white) images
+- `Preset::Poster` - For color images with moderate detail
+- `Preset::Photo` - For photographs with high detail
+
+You can also create custom configurations using the `Config` struct:
+
+```rust
+use vtracer::{Config, ColorMode, Hierarchical};
+use visioncortex::PathSimplifyMode;
+
+let config = Config {
+    color_mode: ColorMode::Color,
+    hierarchical: Hierarchical::Stacked,
+    filter_speckle: 4,
+    color_precision: 6,
+    layer_difference: 16,
+    mode: PathSimplifyMode::Spline,
+    corner_threshold: 60,
+    length_threshold: 4.0,
+    max_iterations: 10,
+    splice_threshold: 45,
+    path_precision: Some(2),
+};
 ```
 
-### Rust Library
+### WASM Compatibility
 
-You can install [`vtracer`](https://crates.io/crates/vtracer) as a Rust library.
-
-```sh
-cargo add vtracer
-```
-
-### Python Library
-
-Since `0.6`, [`vtracer`](https://pypi.org/project/vtracer/) is also packaged as Python native extensions, thanks to the awesome [pyo3](https://github.com/PyO3/pyo3) project.
+This library has no environment variable dependencies and can be compiled to WebAssembly:
 
 ```sh
-pip install vtracer
+cargo build --target wasm32-unknown-unknown
 ```
 
 ## In the wild
